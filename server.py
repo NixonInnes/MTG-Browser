@@ -85,4 +85,8 @@ def search():
 
 
 if __name__ == '__main__':
+<<<<<<< HEAD
     app.run()
+=======
+    app.run()
+>>>>>>> 70fe5d1e55959683b0daf21fcc7ccd08941b1ae8
