@@ -61,16 +61,22 @@ def search():
         sql_pre = "SELECT * FROM mtg_cards WHERE "
         sql_q = []
         sql_v = []
+
         sql_q.append("name LIKE ?")
         sql_v.append("%"+request.form['name_search']+"%")
+
         sql_q.append("type LIKE ?")
         sql_v.append("%"+request.form['type_search']+"%")
-        if getattr(request.form, 'cmc_search'):
+
+        if request.form['cmc_search'] != '':
             sql_q.append("cmc <= ?")
-            sql_v.append(request.form['cmc_search'])
+            sql_v.append(int(request.form['cmc_search']))
+
         sql_q.append("text LIKE ?")
         sql_v.append("%"+request.form['text_search']+"%")
+
         sql_q = sql_pre + " AND ".join(sql_q)
+        print("{}\n{}".format(sql_q, sql_v))
         cur = g.db.execute(sql_q, sql_v)
         cols = [col[0] for col in cur.description]
         rows = cur.fetchall()
