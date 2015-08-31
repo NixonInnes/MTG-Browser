@@ -12,14 +12,5 @@
     {% for message in get_flashed_messages() %}
         <div class=flash>{{ message }}</div>
     {% endfor %}
-    <div class=search>
-        <form action="/search" method=post>
-            Name: <input type=text name=name_search value="{{ request.form.name_search }}">
-            Type: <input type=text name=type_search value="{{ request.form.type_search }}">
-            CMC: <input type=text name=cmc_search value="{{ request.form.cmc_search }}">
-            Text: <input type=text name=text_search value="{{ request.form.text_search }}">
-            <input type=submit value="Search">
-        </form>
-    </div>
     {% block body %}{% endblock %}
 </div>

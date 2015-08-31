@@ -1,25 +1,49 @@
 {% extends "layout.html" %}
 {% block body %}
-    <table class=entries>
-        <tr>
-            <th>Name</th>
-            <th>Mana Cost</th>
-            <th>CMC</th>
-            <th>Type</th>
-            <th>Text</th>
-        </tr>
-        {% for entry in entries %}
-        <tr>
-            <td>{{ entry.name }}</td>
-            <td>{{ entry.manaCost }}</td>
-            <td>{{ entry.cmc }}</td>
-            <td>{{ entry.type }}</td>
-            <td>{{ entry.text }}</td>
-        </tr>
-        {% else %}
-        <tr>
-            <td>No entries :(</td>
-        </tr>
-        {% endfor %}
-    </table>
+    <div class=search>
+        <table>
+            <form action="/search" method=post>
+                <tr>
+                    <td>Name:</td>
+                    <td><input type=text size=15 name=name_search value="{{ request.form.name_search }}"></td>
+                    <td>Type:</td>
+                    <td><input type=text size=15 name=type_search value="{{ request.form.type_search }}"></td>
+                    <td>Text:</td>
+                    <td><input type=text size=15 name=text_search value="{{ request.form.text_search }}"></td>
+                </tr>
+                <tr>
+                    <td>CMC:</td>
+                    <td><input type=text size=5 name=cmc_search_min value="{{ request.form.cmc_search_min }}"> -
+                        <input type=text size=5 name=cmc_search_max value="{{ request.form.cmc_search_min }}"></td>
+                </tr>
+                <tr>
+                    <td><input type=submit value="Search"></td>
+                </tr>
+            </form>
+        </table>
+    </div>
+    <div class=entries>
+        <table class=entries>
+            <tr>
+                <th>Name</th>
+                <th>Mana Cost</th>
+                <th>CMC</th>
+                <th>Type</th>
+                <th>Text</th>
+            </tr>
+            {% for entry in entries %}
+            <tr>
+                <td>{{ entry.name }}</td>
+                <td>{{ entry.manaCost }}</td>
+                <td>{{ entry.cmc }}</td>
+                <td>{{ entry.type }}</td>
+                <td>{{ entry.text }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td>No entries :(</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
 {% endblock %}

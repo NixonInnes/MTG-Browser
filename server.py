@@ -68,9 +68,13 @@ def search():
         sql_q.append("type LIKE ?")
         sql_v.append("%"+request.form['type_search']+"%")
 
-        if request.form['cmc_search'] != '':
+        if request.form['cmc_search_min'] != '':
+            sql_q.append("cmc >= ?")
+            sql_v.append(int(request.form['cmc_search_min']))
+
+        if request.form['cmc_search_max'] != '':
             sql_q.append("cmc <= ?")
-            sql_v.append(int(request.form['cmc_search']))
+            sql_v.append(int(request.form['cmc_search_max']))
 
         sql_q.append("text LIKE ?")
         sql_v.append("%"+request.form['text_search']+"%")
