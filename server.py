@@ -1,10 +1,12 @@
+import os
 import hashlib
 import sqlite3 as sql
 
 from flask import Flask, request, session, g, redirect, url_for, \
-     abort, render_template, flash
+     abort, render_template, flash, jsonify
 
 import config
+import database
 
 app = Flask(__name__)
 app.config.from_object(config.Debug)
@@ -31,16 +33,7 @@ def teardown_request(exception):
 
 @app.route('/')
 def show_entries():
-    cur = g.db.execute("SELECT * FROM mtg_cards")
-    cols = [col[0] for col in cur.description]
-    rows = cur.fetchall()
-    entry = {}
-    entries = []
-    for row in rows:
-        for col in cols:
-            entry[col] = row[cols.index(col)]
-        entries.append(entry.copy())
-    return render_template('show_entries.html', entries=entries)
+    return render_template('show_entries.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -48,19 +41,19 @@ def login():
     if request.method == 'POST':
         if app.config['DEBUG'] is True:
             if request.form['username'] != app.config['USERNAME'] or request.form['password'] != app.config['PASSWORD']:
-                error = "Invalid username or password"
+                error = "Invalid username or password."
             else:
                 session['logged_in'] = True
-                flash('You are now logged in')
+                flash("You are now logged in.")
                 return redirect(url_for('show_entries'))
         else:
-            pass #TODO: Create user database & login function
+            pass
     return render_template('login.html', error=error)
 
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
-    flash('You have been logged out')
+    flash("You have been logged out.")
     return redirect(url_for('show_entries'))
 
 @app.route('/search', methods=['GET', 'POST'])
@@ -101,7 +94,27 @@ def search():
         return render_template('show_entries.html', entries=entries)
     return render_template('show_entries.html', entries=None)
 
+@app.route('/api', methods=['GET'])
+def api():
+    cards = request.args.get('card')
+    cards = cards.split(';')
+    entries = []
+    entry = {}
+    for card in cards:
+        cur = g.db.execute("SELECT * FROM mtg_cards WHERE name = ? COLLATE NOCASE", [card])
+        row = cur.fetchone()
+        if row is not None:
+            cols = [col[0] for col in cur.description]
+            for col in cols:
+                entry[col] = row[cols.index(col)]
+        else:
+            entry = [None]
+        entries.append(entry.copy())
+    return jsonify({"cards":entries})
 
 if __name__ == '__main__':
+    if not os.path.isfile(database.DB_FILENAME):
+        database.create_cards_table()
+        database.create_user_table()
     app.run()
 
