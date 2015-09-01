@@ -1,51 +1,37 @@
 import sqlite3
 import requests
-import os
-
-BASIC_LANDS = (
-    'plains',
-    'island',
-    'swamp',
-    'mountain',
-    'forest')
 
 DB_FILENAME = "data/mtg.sqlite"
 
-CARDS_DB_COLS = (
-    'layout',
-    'colors',
-    'power',
-    'name',
-    'subtypes',
-    'types',
-    'cmc',
-    'manaCost',
-    'imageName',
-    'text',
-    'type',
-    'toughness',
-    'supertypes',
-    'names',
-    'starter',
-    'hand',
-    'life',
-    'loyalty')
+USER_SCHEMA = """
+    CREATE TABLE users(
+        username TEXT,
+        password TEXT,
+        mod_level INT,
+        decks TEXT)
+        """
 
-SETS_DB_COLS = (
-    'code',
-    'magicCardsInfoCode',
-    'border',
-    'releaseDate',
-    'type',
-    'magicRaritiesCodes',
-    'name',
-    'cards',
-    'booster',
-    'languagesPrinted',
-    'block',
-    'gathererCode',
-    'onlineOnly',
-    'oldCode')
+CARDS_SCHEMA = """
+    CREATE TABLE mtg_cards(
+        layout TEXT,
+        colors TEXT,
+        power INT,
+        name TEXT,
+        subtypes TEXT,
+        types TEXT,
+        cmc INT,
+        manaCost TEXT,
+        imageName TEXT,
+        text TEXT,
+        type TEXT,
+        toughness INT,
+        supertypes TEXT,
+        names TEXT,
+        starter TEXT,
+        hand TEXT,
+        life INT,
+        loyalty INT)
+        """
 
 def card_search(card):
     db = sqlite3.connect(DB_FILENAME)
@@ -64,32 +50,6 @@ def card_search(card):
     db.close()
     return data
 
-def get_card(card_name):
-    card = dict()
-    if str(card_name).lower() in BASIC_LANDS:
-        for col in CARDS_DB_COLS:
-            card[col] = 'NaN'
-        card['layout'] = 'normal'
-        card['name'] = str(card_name).title()
-        card['types'] = ['Land']
-        card['type'] = 'Land'
-        return card
-    else:
-        search = card_search(card_name)
-        if len(search) == 1:
-            for col in CARDS_DB_COLS:
-                card[col] = search[0][len(card)]
-            return card
-        else:
-            return None
-
-def get_sets_json():
-    try:
-        sets = requests.get('http://mtgjson.com/json/AllSets.json').json()
-        return sets
-    except:
-        return {}
-
 def get_cards_json():
     try:
         cards = requests.get('http://mtgjson.com/json/AllCards.json').json()
@@ -97,122 +57,34 @@ def get_cards_json():
     except:
         return {}
 
-def create_mtg_table():
-    while True:
-        if not os.path.isfile(DB_FILENAME):
-            db = sqlite3.connect(DB_FILENAME)
-            cur = db.cursor()
-            cur.execute('''
-                CREATE TABLE mtg_sets(
-                    code TEXT,
-                    magicCardsInfoCode TEXT,
-                    border TEXT,
-                    releaseDate DATE,
-                    type TEXT,
-                    magicRaritiesCodes TEXT,
-                    name TEXT,
-                    cards TEXT,
-                    booster TEXT,
-                    languagesPrinted TEXT,
-                    block TEXT,
-                    gathererCode TEXT,
-                    onlineOnly TEXT,
-                    oldCode TEXT)
-                ''')
-            cur.execute('''
-                CREATE TABLE mtg_cards(
-                    layout TEXT,
-                    colors TEXT,
-                    power TEXT,
-                    name TEXT,
-                    subtypes TEXT,
-                    types TEXT,
-                    cmc INT,
-                    manaCost TEXT,
-                    imageName TEXT,
-                    text TEXT,
-                    type TEXT,
-                    toughness TEXT,
-                    supertypes TEXT,
-                    names TEXT,
-                    starter TEXT,
-                    hand TEXT,
-                    life TEXT,
-                    loyalty TEXT)
-                ''')
-            db.commit()
-            db.close()
-            break
-        else:
-            usr = input("mtg.sqlite already exists, delete it? [Y/N]")
-            if usr.lower() == 'n':
-                break
-            elif usr.lower() == 'y':
-                os.remove(DB_FILENAME)
-
-def populate_cards_table():
-    if not os.path.isfile(DB_FILENAME):
-        create_mtg_table()
+def create_cards_table():
+    # Connect to DB
     db = sqlite3.connect(DB_FILENAME)
     cur = db.cursor()
+
+    # Drop the existing cards table
+    cur.execute("DROP TABLE IF EXISTS mtg_cards")
+    # Create a new fresh table
+    cur.execute(CARDS_SCHEMA)
+
+    # Get table columns
+    cur.execute("PRAGMA table_info(mtg_cards)")
+    tmp = cur.fetchall()
+    cols = [t[1] for t in tmp]
+
+    # Get the JSON card data
     all_cards = get_cards_json()
+
+    # Iterate through the cards, putting their data into lists for the DB
+    sql_v = [] #Individual card values
+    sql_row_v = [] #Rows of cards
     for key in all_cards:
-        table_list = list()
-        for header in CARDS_DB_COLS:
-            table_list.append(str(all_cards[key][header]) if header in all_cards[key] else None)
-        cur.execute('''
-            INSERT INTO mtg_cards(
-                layout,
-                colors,
-                power,
-                name,
-                subtypes,
-                types,
-                cmc,
-                manaCost,
-                imageName,
-                text,
-                type,
-                toughness,
-                supertypes,
-                names,
-                starter,
-                hand,
-                life,
-                loyalty)
-                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-            ''',table_list)
-    db.commit()
-    db.close()
+        for col in cols:
+            sql_v.append(str(all_cards[key][col]) if col in all_cards[key] else None)
+        sql_row_v.append(sql_v.copy())
+        sql_v.clear()
 
-def populate_sets_table():
-    if not os.path.isfile(DB_FILENAME):
-        create_mtg_table()
-
-    db = sqlite3.connect(DB_FILENAME)
-    cur = db.cursor()
-    all_sets = get_sets_json()
-    for key in all_sets:
-        table_list = list()
-        for header in SETS_DB_COLS:
-            table_list.append(str(all_sets[key][header]) if header in all_sets[key] else None)
-        cur.execute('''
-            INSERT INTO mtg_sets(
-                code,
-                magicCardsInfoCode,
-                border,
-                releaseDate,
-                type,
-                magicRaritiesCodes,
-                name,
-                cards,
-                booster,
-                languagesPrinted,
-                block,
-                gathererCode,
-                onlineOnly,
-                oldCode)
-                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-            ''',table_list)
+    # Store the card data in the DB
+    cur.executemany("INSERT INTO mtg_cards ({}) VALUES({}{})".format(",".join(cols), "?,"*(len(cols)-1), "?"), sql_row_v)
     db.commit()
     db.close()

@@ -1,3 +1,4 @@
+import hashlib
 import sqlite3 as sql
 
 from flask import Flask, request, session, g, redirect, url_for, \
@@ -10,6 +11,13 @@ app.config.from_object(config.Debug)
 
 def connect_db():
     return sql.connect(app.config['DATABASE'])
+
+def make_pass(password):
+    password = str(password).encode('utf-8')
+    salt = "lkujiNP*Hnoi98J(*)Jjoj(*U(*Y8t76rt&*^%R&^%&*^%(bhiuh*&Y)))".encode('utf-8')
+    p = hashlib.md5()
+    p.update(salt + password)
+    return p.hexdigest()
 
 @app.before_request
 def before_request():
